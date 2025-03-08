@@ -2,6 +2,7 @@ import scipy.io
 import numpy as np
 import pandas as pd
 from torch.utils.data import Dataset
+import torch
 
 class Mat2TVT:
 
@@ -276,8 +277,8 @@ class Preprocessor:
 
 class Custom_EMG(Dataset):
     def __init__(self, X, y, transform = None, target_transform = None):
-        self.X = X
-        self.y = y
+        self.X = torch.Tensor(X)
+        self.y = torch.Tensor(y)
         self.transform = transform
         self.target_transform = target_transform
 
@@ -298,7 +299,7 @@ class Custom_EMG(Dataset):
     
     
 
-class Jitter:
+class Jitter(object):
     def __init__(self, scale):
         self.scale = scale
     
