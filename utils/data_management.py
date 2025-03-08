@@ -255,7 +255,7 @@ class Preprocessor:
 
 
     def freq_spec(self, X): 
-        fft = np.fft.fft(X, axis = 0)
+        fft = np.log(np.fft.fft(X, axis = 0))
         fft_bins = np.fft.fftfreq(X.shape[0], d = 1/self.Xr)
         return fft, fft_bins
     
