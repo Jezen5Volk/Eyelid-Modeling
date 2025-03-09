@@ -308,3 +308,17 @@ class Jitter(object):
         jitter = np.random.normal(loc = 0, scale = self.scale, size = sample.shape)
 
         return {'data': data + jitter, 'label': label}
+    
+
+class MaskRand(object):
+    def __init__(self, p):
+        self.p = p
+    
+    def __call__(self, sample):
+        data, label = sample['data'], sample['label']
+        
+        idx = np.random.randint(int((1-self.p)*data.shape[0]))
+
+        data[idx:idx + int(self.p*data.shape[0]), :] = 0
+
+        return {'data': data, 'label': label}
