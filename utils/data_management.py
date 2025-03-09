@@ -290,6 +290,7 @@ class Custom_EMG(Dataset):
         label = self.y[:,:,idx, :]
 
         if self.transform:
+            print(trial.shape)
             trial = self.transform(trial)
         
         if self.target_transform:
@@ -299,26 +300,24 @@ class Custom_EMG(Dataset):
     
     
 
-class Jitter(object):
+class Jitter(torch.nn.Module):
     def __init__(self, scale):
+        super().__init__()
         self.scale = scale
     
     def __call__(self, sample):
-        data, label = sample['data'], sample['label']
         jitter = np.random.normal(loc = 0, scale = self.scale, size = sample.shape)
-
-        return {'data': data + jitter, 'label': label}
+        
+        return sample + jitter
     
 
-class MaskRand(object):
+class MaskRand(torch.nn.Module):
     def __init__(self, p):
+        super().__init__()
         self.p = p
     
     def __call__(self, sample):
-        data, label = sample['data'], sample['label']
-        
-        idx = np.random.randint(int((1-self.p)*data.shape[0]))
+        idx = np.random.randint(int((1-self.p)*sample.shape[0]))
+        sample[idx:idx + int(self.p*sample.shape[0]), :] = 0
 
-        data[idx:idx + int(self.p*data.shape[0]), :] = 0
-
-        return {'data': data, 'label': label}
+        return sample
