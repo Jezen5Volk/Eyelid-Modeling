@@ -290,7 +290,6 @@ class Custom_EMG(Dataset):
         label = self.y[:,:,idx, :]
 
         if self.transform:
-            print(trial.shape)
             trial = self.transform(trial)
         
         if self.target_transform:
