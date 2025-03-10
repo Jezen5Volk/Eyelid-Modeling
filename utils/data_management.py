@@ -84,7 +84,7 @@ class Mat2TVT:
 
         #Collect Label/Identifier
         identifier = []
-        label = np.zeros((300, 3, 1, 7))
+        label = np.zeros((300, 3, 1, 5))
         for blink_key in mat['ForSamantha']['kinem']:
             for sub_key in mat['ForSamantha']['kinem'][blink_key]:
                 trial = []

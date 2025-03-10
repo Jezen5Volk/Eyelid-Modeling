@@ -10,7 +10,7 @@ class EMG_RNN(torch.nn.Module):
         Output shape: (N, L, 3, C)
         where N is batch size, L is sequence length, C is num of channels
 
-        Note that sequence length will always differ and number of channels will usually differ between i/o
+        Note that sequence length will always differ and number of channels may differ between i/o
         The 3 in the output shape refers to cartesian XYZ coordinate dimensions
         '''
         super().__init__()
