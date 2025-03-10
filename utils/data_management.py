@@ -277,8 +277,8 @@ class Preprocessor:
 
 class Custom_EMG(Dataset):
     def __init__(self, X, y, transform = None, target_transform = None):
-        self.X = torch.Tensor(X)
-        self.y = torch.Tensor(y)
+        self.X = torch.Tensor(X).to(torch.float32)
+        self.y = torch.Tensor(y).to(torch.float32)
         self.transform = transform
         self.target_transform = target_transform
 
@@ -286,8 +286,9 @@ class Custom_EMG(Dataset):
         return self.X.shape[1]
     
     def __getitem__(self, idx):
-        trial = self.X[:, idx, :]
-        label = self.y[:,:,idx, :]
+        trial = torch.Tensor(self.X[:, idx, :]).to(torch.float32)
+        label = torch.Tensor(self.y[:,:,idx, :]).to(torch.float32)
+        
 
         if self.transform:
             trial = self.transform(trial)
@@ -305,7 +306,7 @@ class Jitter(torch.nn.Module):
         self.scale = scale
     
     def __call__(self, sample):
-        jitter = np.random.normal(loc = 0, scale = self.scale, size = sample.shape)
+        jitter = torch.Tensor(np.random.normal(loc = 0, scale = self.scale, size = sample.shape)).to(torch.float32)
         
         return sample + jitter
     
@@ -317,6 +318,6 @@ class MaskRand(torch.nn.Module):
     
     def __call__(self, sample):
         idx = np.random.randint(int((1-self.p)*sample.shape[0]))
-        sample[idx:idx + int(self.p*sample.shape[0]), :] = 0
+        sample[idx:idx + int(self.p*sample.shape[0]), :] = torch.zeros(1)
 
         return sample
