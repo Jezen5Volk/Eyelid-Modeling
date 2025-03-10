@@ -28,12 +28,17 @@ class Trainer:
 
         for batch, (X, y) in enumerate(self.train_dl):
             pred = self.model(X)
+            print(torch.isnan(y).any())
             loss = self.loss_fn(pred, y)
+            print(loss)
 
             #backpropagation
-            loss.backward()
-            self.optimizer.step()
             self.optimizer.zero_grad()
+            loss.backward()
+            print(loss, "a")
+            torch.nn.utils.clip_grad_value_(self.model.parameters(), 1)
+            self.optimizer.step()
+            
 
             if batch % 100 == 0 and self.verbose: 
                 loss, current = loss.item(), batch * self.batch_size + len(X)
@@ -51,7 +56,7 @@ class Trainer:
             for X, y in self.val_dl:
                 pred = self.model(X)
                 test_loss += self.loss_fn(pred, y)
-                test_acc = torch.max((pred-y)/y)*100
+                test_acc = torch.max((pred-y)/y)*100 ##REMINDER TO ADD EPISILON FOR NUMERICAL STABILITY
                 err = torch.max((test_acc, err))
         
         test_loss /= num_batches

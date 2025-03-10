@@ -19,6 +19,7 @@ class EMG_RNN(torch.nn.Module):
         self.aff1 = torch.nn.Linear(in_features = shape_in[1], out_features = shape_out[1])
         self.aff2 = torch.nn.Linear(in_features = shape_in[1], out_features = shape_out[1])
         self.aff3 = torch.nn.Linear(in_features = shape_in[1], out_features = shape_out[1])
+
         
     def forward(self, X):
         #we expect incoming X to be of shape (N, L, C)
