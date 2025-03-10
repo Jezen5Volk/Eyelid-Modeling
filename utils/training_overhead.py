@@ -55,8 +55,8 @@ class Trainer:
             for X, y in self.val_dl:
                 pred = self.model(X)
                 test_loss += self.loss_fn(pred, y)
-                test_acc = torch.max((pred-y)/y)*100 ##REMINDER TO ADD EPISILON FOR NUMERICAL STABILITY
-                err = torch.max((test_acc, err))
+                test_acc = torch.max((pred-y)/(y+1e-8))
+                err = torch.max(torch.Tensor([test_acc, err]))
         
         test_loss /= num_batches
         
