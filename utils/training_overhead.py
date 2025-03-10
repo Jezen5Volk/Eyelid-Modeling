@@ -25,20 +25,19 @@ class Trainer:
     def train_loop(self):
         size = len(self.train_dl.dataset)
         self.model.train()
-
+        
+        P = torch.zeros(self.model.shape_out) 
         for batch, (X, y) in enumerate(self.train_dl):
-            pred = self.model(X)
+            pred = self.model(X, P)
+            P = pred.clone().detach()
             loss = self.loss_fn(pred, y)
             
-
             #backpropagation
             self.optimizer.zero_grad()
-            loss.backward()
-            
+            loss.backward(retain_graph = True)
             torch.nn.utils.clip_grad_value_(self.model.parameters(), 1)
             self.optimizer.step()
             
-
             if batch % 100 == 0 and self.verbose: 
                 loss, current = loss.item(), batch * self.batch_size + len(X)
                 print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
