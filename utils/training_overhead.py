@@ -28,14 +28,13 @@ class Trainer:
 
         for batch, (X, y) in enumerate(self.train_dl):
             pred = self.model(X)
-            print(torch.isnan(y).any())
             loss = self.loss_fn(pred, y)
-            print(loss)
+            
 
             #backpropagation
             self.optimizer.zero_grad()
             loss.backward()
-            print(loss, "a")
+            
             torch.nn.utils.clip_grad_value_(self.model.parameters(), 1)
             self.optimizer.step()
             

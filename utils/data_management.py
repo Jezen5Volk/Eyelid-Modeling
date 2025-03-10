@@ -125,7 +125,7 @@ class Mat2TVT:
         _, _, n_trial, _ = np.where(np.isnan(y))
         removal = []
         for trial in set(n_trial):
-            if np.any(np.isnan(y[299, :, trial, :])):
+            if np.any(np.isnan(y[299, :, trial, :])) or np.any(np.isnan(y[0, :, trial, :])):
                 removal.append(trial)
             else:
                 y[:, :, trial, :] = self.cubic_interp(y[:, :, trial, :])
@@ -155,8 +155,8 @@ class Mat2TVT:
         interp_trial = np.empty(np.shape(trial))
         for i in range(trial.shape[-2]):
             for j in range(trial.shape[-1]):
-                df = pd.Series(trial[:, i, j])
-                interp_trial[:, i, j] = np.asarray(df.interpolate(method = 'cubic', limit = 299))
+                df = pd.Series(trial[:, i, j]).astype(float)
+                interp_trial[:, i, j] = np.asarray(df.interpolate(method = 'cubic', limit_direction='both'))
         return interp_trial
 
     
