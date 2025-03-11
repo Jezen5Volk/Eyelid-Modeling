@@ -16,19 +16,22 @@ class Trainer:
     
     def train(self, verbose = False):
         self.verbose = verbose
+        training_loss = []
+        validation_loss = []
         for t in range(self.epochs):
             print(f"Epoch {t+1}\n-------------------------------")
-            self.train_loop()
-            self.val_loop()
+            training_loss.append(self.train_loop())
+            validation_loss.append(self.val_loop())
         print("Done!")
 
-        return self.model.state_dict()
+        return torch.Tensor(training_loss).cpu(), torch.Tensor(validation_loss).cpu()
 
 
     def train_loop(self):
         size = len(self.train_dl.dataset)
         self.model.train()
         
+        running_loss = []
         for batch, (X, y) in enumerate(self.train_dl):
             #Handle device switching
             if torch.cuda.is_available(): 
@@ -42,15 +45,18 @@ class Trainer:
                 pred[:, :, :, win, :] = self.model(X[:, :, win, :], P)
                 P = pred[:, :, :, win, :].clone().detach()
             loss = self.loss_fn(pred, y)
+            running_loss.append(loss.item())
             
             #backpropagation
             self.optimizer.zero_grad()
             loss.backward(retain_graph = True)
             self.optimizer.step()
-            
+
             if batch % 5 == 0 and self.verbose: 
                 loss, current = loss.item(), batch * self.batch_size + len(X)
                 print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+
+        return torch.mean(torch.Tensor(running_loss))
 
 
     def val_loop(self):
@@ -82,6 +88,8 @@ class Trainer:
         
         print(f"Validation Error: \n Max Marker Error: {(err):>0.1f}%, Avg Marker Error: {(val_merr):>0.1f}%, Avg loss: {val_loss:>8f} \n")
 
+        return val_loss
+
     
     def test_model(self, test_dl):
         self.model.eval()
@@ -110,6 +118,8 @@ class Trainer:
         test_loss /= num_batches
         
         print(f"Test Error: \n Max Marker Error: {(err):>0.1f}%, Avg Marker Error: {(test_merr):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+
+        return test_loss
 
     
     def two_norm3D(self, pred, y, eps = 1e-8):
