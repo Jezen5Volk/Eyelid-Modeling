@@ -30,17 +30,17 @@ class Trainer:
             pred = torch.zeros(y.shape)
             P = pred[:, :, :, 0, :]
             for win in range(X.shape[-2]): 
-                pred[:, :, : win, :] = self.model(X[:, :, win, :], P)
-                P = pred[:, :, : win, :].clone().detach()
+                pred = pred.clone()
+                pred[:, :, :, win, :] = self.model(X[:, :, win, :], P)
+                P = pred[:, :, :, win, :].clone()
             loss = self.loss_fn(pred, y)
             
             #backpropagation
             self.optimizer.zero_grad()
             loss.backward(retain_graph = True)
-            torch.nn.utils.clip_grad_value_(self.model.parameters(), 1)
             self.optimizer.step()
             
-            if batch % 100 == 0 and self.verbose: 
+            if batch % 5 == 0 and self.verbose: 
                 loss, current = loss.item(), batch * self.batch_size + len(X)
                 print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
@@ -54,15 +54,21 @@ class Trainer:
 
         with torch.no_grad():
             for X, y in self.val_dl:
-                pred = self.model(X)
+                pred = torch.zeros(y.shape)
+                P = pred[:, :, :, 0, :]
+                for win in range(X.shape[-2]):
+                    pred = pred.clone()
+                    pred[:, :, :, win, :] = self.model(X[:, :, win, :], P)
+                    P = pred[:, :, :, win, :].clone()
+
                 val_loss += self.loss_fn(pred, y)
-                val_acc = self.two_norm3D(pred, y)
+                val_acc, val_merr = self.two_norm3D(pred, y)
                 err = torch.max(torch.Tensor([val_acc, err]))
                 
         
         val_loss /= num_batches
         
-        print(f"Validation Error: \n Max Marker Error: {(err):>0.1f}%, Avg loss: {val_loss:>8f} \n")
+        print(f"Validation Error: \n Max Marker Error: {(err):>0.1f}%, Avg Marker Error: {(val_merr):>0.1f}%, Avg loss: {val_loss:>8f} \n")
 
     
     def test_model(self, test_dl):
@@ -74,15 +80,20 @@ class Trainer:
 
         with torch.no_grad():
             for X, y in test_dl:
-                pred = self.model(X)
-                test_loss += self.loss_fn(pred, y)
+                pred = torch.zeros(y.shape)
+                P = pred[:, :, :, 0, :]
+                for win in range(X.shape[-2]):
+                    pred = pred.clone()
+                    pred[:, :, :, win, :] = self.model(X[:, :, win, :], P)
+                    P = pred[:, :, :, win, :].clone()
 
-                test_acc = self.two_norm3D(pred, y)
+                test_loss += self.loss_fn(pred, y)
+                test_acc, test_merr = self.two_norm3D(pred, y)
                 err = torch.max(torch.Tensor([test_acc, err]))
         
         test_loss /= num_batches
         
-        print(f"Test Error: \n Max Marker Error: {(err):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+        print(f"Test Error: \n Max Marker Error: {(err):>0.1f}%, Avg Marker Error: {(test_merr):>0.1f}%, Avg loss: {test_loss:>8f} \n")
 
     
     def two_norm3D(self, pred, y, eps = 1e-8):
@@ -103,8 +114,9 @@ class Trainer:
 
         err = diff/(magnitude + eps)*100
         max_err = torch.max(err)
+        mean_err = torch.mean(err)
 
-        return max_err
+        return max_err, mean_err
 
 
 

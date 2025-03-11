@@ -64,9 +64,6 @@ class EMG_RNN(torch.nn.Module):
         Z_pred, _ = self.RNNY1(pred[:, :, 2, :])
         P = torch.stack((X_pred, Y_pred, Z_pred), dim = 2)
 
-        print(P.shape, H.shape)
-
-
         return H + P
     
     @property
