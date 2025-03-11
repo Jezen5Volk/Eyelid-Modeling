@@ -2,7 +2,10 @@ import torch
 
 class Trainer:
     def __init__(self, train_dl, val_dl, model, loss_fn, optimizer, batch_size, epochs):
-        self.model = model
+        if torch.cuda.is_available():
+            self.model = model.cuda()
+        else: 
+            self.model = model
         self.loss_fn = loss_fn
         self.optimizer = optimizer
         self.train_dl = train_dl
@@ -27,12 +30,17 @@ class Trainer:
         self.model.train()
         
         for batch, (X, y) in enumerate(self.train_dl):
-            pred = torch.zeros(y.shape)
+            #Handle device switching
+            if torch.cuda.is_available(): 
+                pred = torch.zeros(y.shape).cuda()
+            else: 
+                pred = torch.zeros(y.shape)
+            
             P = pred[:, :, :, 0, :]
             for win in range(X.shape[-2]): 
-                pred = pred.clone()
+                pred = pred.clone().detach()
                 pred[:, :, :, win, :] = self.model(X[:, :, win, :], P)
-                P = pred[:, :, :, win, :].clone()
+                P = pred[:, :, :, win, :].clone().detach()
             loss = self.loss_fn(pred, y)
             
             #backpropagation
@@ -54,7 +62,11 @@ class Trainer:
 
         with torch.no_grad():
             for X, y in self.val_dl:
-                pred = torch.zeros(y.shape)
+                #Handle device switching
+                if torch.cuda.is_available(): 
+                    pred = torch.zeros(y.shape).cuda()
+                else: 
+                    pred = torch.zeros(y.shape)
                 P = pred[:, :, :, 0, :]
                 for win in range(X.shape[-2]):
                     pred = pred.clone()
@@ -80,7 +92,11 @@ class Trainer:
 
         with torch.no_grad():
             for X, y in test_dl:
-                pred = torch.zeros(y.shape)
+                #Handle device switching
+                if torch.cuda.is_available(): 
+                    pred = torch.zeros(y.shape).cuda()
+                else: 
+                    pred = torch.zeros(y.shape)
                 P = pred[:, :, :, 0, :]
                 for win in range(X.shape[-2]):
                     pred = pred.clone()
