@@ -26,10 +26,12 @@ class Trainer:
         size = len(self.train_dl.dataset)
         self.model.train()
         
-        P = torch.zeros(self.model.shape_out) 
         for batch, (X, y) in enumerate(self.train_dl):
-            pred = self.model(X, P)
-            P = pred.clone().detach()
+            pred = torch.zeros(y.shape)
+            P = pred[:, :, :, 0, :]
+            for win in range(X.shape[-2]): 
+                pred[:, :, : win, :] = self.model(X[:, :, win, :], P)
+                P = pred[:, :, : win, :].clone().detach()
             loss = self.loss_fn(pred, y)
             
             #backpropagation

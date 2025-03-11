@@ -203,7 +203,7 @@ class Preprocessor:
 
         ie: 
         X = (4564, N, 5) @ 6103.5 Hz
-        y = (300, 3, N, 7) @ 400 Hz
+        y = (300, 3, N, 5) @ 400 Hz
 
         t_win = 20 ms
         t_lookahead = 50 ms
@@ -211,8 +211,8 @@ class Preprocessor:
 
         Then we would expect to return 
 
-        X_win = (20 ms*Xr, N_win*N, 5)
-        y_win = (10 ms*yr, 3, N_win*N, 7)
+        X_win = (20 ms*Xr, N, N_win 5)
+        y_win = (10 ms*yr, 3, N, N_win, 5)
 
         where the temporal offset between any (X,y) pair of windows is equal to t_lookahead:
         X_win[:, 0, :] --> window encompassing 0 ms to 20 ms (absolute time)
@@ -234,17 +234,17 @@ class Preprocessor:
 
         num_win = (t_y - int(t_lookahead*yr) - int(t_win*yr)) // int(t_stride*yr)
 
-        X_win = np.empty((int(t_win*Xr), N*num_win, C_x))
-        y_win = np.empty((int(t_stride*yr), d, N*num_win, C_y))
+        X_win = np.empty((int(t_win*Xr), N, num_win, C_x))
+        y_win = np.empty((int(t_stride*yr), d, N, num_win, C_y))
         for i in range(N):
             for j in range(num_win):
                 x_strt = j*int(t_stride*Xr)
                 x_stop = x_strt + int(t_win*Xr)
-                X_win[:, i*num_win + j, :] = X[x_strt:x_stop, i, :]
+                X_win[:, i,j :] = X[x_strt:x_stop, i, :]
 
                 y_strt = j*int(t_stride*yr) + int(t_lookahead*yr)
                 y_stop = y_strt + int(t_stride*yr)
-                y_win[:, :, i*num_win + j, :] = y[y_strt:y_stop, :, i, :]
+                y_win[:, :, i, j, :] = y[y_strt:y_stop, :, i, j, :]
 
 
         return X_win, y_win
