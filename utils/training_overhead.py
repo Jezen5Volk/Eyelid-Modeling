@@ -17,21 +17,42 @@ class Trainer:
     def train(self, verbose = False):
         self.verbose = verbose
         training_loss = []
+        training_avgerr = []
+        training_maxerr = []
         validation_loss = []
+        validation_avgerr = []
+        validation_maxerr = []
         early_stopper = EarlyStopper()
         for t in range(self.epochs):
             print(f"Epoch {t+1}\n-------------------------------")
-            training_loss.append(self.train_loop())
-            val_loss = self.val_loop()
+            train_loss, train_avgerr, train_maxerr = self.train_loop()
+            val_loss, val_avgerr, val_maxerr = self.val_loop()
+
+            #appending various metrics
+            training_loss.append(train_loss)
+            training_avgerr.append(train_avgerr)
+            training_maxerr.append(train_maxerr)
             validation_loss.append(val_loss)
-            
+            validation_avgerr.append(val_avgerr)
+            validation_maxerr.append(val_maxerr)
+
+            #early stopping
             early_stopper(val_loss)
             if early_stopper.early_stop:
                 print(f'Stopped early after epoch: {t}')
                 break
         print("Done!")
 
-        return torch.Tensor(training_loss).cpu(), torch.Tensor(validation_loss).cpu()
+        metrics = {
+            'Training Loss': torch.Tensor(training_loss).cpu(),
+            'Training Avg Marker Error': torch.Tensor(training_avgerr).cpu(),
+            'Training Max Marker Error': torch.Tensor(training_maxerr).cpu(),
+            'Validation Loss': torch.Tensor(validation_loss).cpu(),
+            'Validation Avg Marker Error': torch.Tensor(validation_avgerr).cpu(),
+            'Validation Max Marker Error': torch.Tensor(validation_maxerr).cpu()
+            }
+
+        return metrics
 
 
     def train_loop(self):
@@ -39,6 +60,8 @@ class Trainer:
         self.model.train()
         
         running_loss = []
+        running_merr = []
+        err = 0
         for batch, (X, y) in enumerate(self.train_dl):
             #Handle device switching
             if torch.cuda.is_available(): 
@@ -51,8 +74,14 @@ class Trainer:
                 pred = pred.clone().detach()
                 pred[:, :, :, win, :] = self.model(X[:, :, win, :], P)
                 P = pred[:, :, :, win, :].clone().detach()
+            
+            #Tracking metrics
             loss = self.loss_fn(pred, y)
+            train_acc, train_avg = self.two_norm3D(pred, y)
+            err = torch.max(torch.Tensor([train_acc, err]))
             running_loss.append(loss.item())
+            running_merr.append(train_avg)
+
             
             #backpropagation
             self.optimizer.zero_grad()
@@ -63,7 +92,7 @@ class Trainer:
                 loss, current = loss.item(), batch * self.batch_size + len(X)
                 print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
-        return torch.mean(torch.Tensor(running_loss))
+        return torch.mean(torch.Tensor(running_loss)), torch.mean(torch.Tensor(running_merr)), err
 
 
     def val_loop(self):
@@ -71,6 +100,7 @@ class Trainer:
         num_batches = len(self.val_dl)
 
         val_loss = 0
+        val_merr = 0
         err = 0
 
         with torch.no_grad():
@@ -87,15 +117,17 @@ class Trainer:
                     P = pred[:, :, :, win, :].clone()
 
                 val_loss += self.loss_fn(pred, y)
-                val_acc, val_merr = self.two_norm3D(pred, y)
+                val_acc, val_avg = self.two_norm3D(pred, y)
+                val_merr += val_avg
                 err = torch.max(torch.Tensor([val_acc, err]))
                 
         
         val_loss /= num_batches
+        val_merr /= num_batches
         
         print(f"Validation Error: \n Max Marker Error: {(err):>0.1f}%, Avg Marker Error: {(val_merr):>0.1f}%, Avg loss: {val_loss:>8f} \n")
 
-        return val_loss
+        return val_loss, val_merr, err
 
     
     def test_model(self, test_dl):
