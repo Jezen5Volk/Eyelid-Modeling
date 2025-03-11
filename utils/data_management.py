@@ -277,8 +277,12 @@ class Preprocessor:
 
 class Custom_EMG(Dataset):
     def __init__(self, X, y, transform = None, target_transform = None):
-        self.X = torch.Tensor(X).to(torch.float32)
-        self.y = torch.Tensor(y).to(torch.float32)
+        if torch.cuda.is_available(): 
+            self.X = torch.Tensor(X).to(torch.float32).cuda()
+            self.y = torch.Tensor(y).to(torch.float32).cuda()
+        else: 
+            self.X = torch.Tensor(X).to(torch.float32)
+            self.y = torch.Tensor(y).to(torch.float32)
         self.transform = transform
         self.target_transform = target_transform
 
