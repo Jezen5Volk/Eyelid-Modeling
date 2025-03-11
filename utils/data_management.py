@@ -162,7 +162,7 @@ class Mat2TVT:
     
     def DMVC_norm(self):
         self.X = self.X - np.mean(self.X, axis = 0) #meansub all EMG data to ensure mu = 0
-        self.y = self.y - np.min(self.y, axis = 0) #minsub all labels to ensure model learns relative motions rather than absolute motions
+        self.y = self.y - np.mean(self.y, axis = 0) #meansub all labels to ensure model learns relative motions rather than absolute motions
 
         #obtain string of subjects
         id = self.identifier[:,0]
@@ -171,11 +171,16 @@ class Mat2TVT:
             sub.append(string.split('_')[0])
         sub = np.asarray(sub)
 
-        #for each subject, set EMG variance to 1 along the channel axis
+        
         for s_num in set(sub):
+            #for each subject, set EMG variance to 1 along the channel axis
             idx = np.where(sub == str(s_num))[0]
             s_data = self.X[:, idx, :]
             self.X[:, idx, :] = s_data/np.std(s_data, axis = (0,1))
+
+            #for each subject, set kinematic variance to 1 along the channel axis
+            s_data = self.y[:, :, idx, :]
+            self.y[:, :, idx, :] = s_data/np.std(s_data, axis = (0,1,2))
         
         return self.X, self.y
     
