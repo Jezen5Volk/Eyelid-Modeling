@@ -204,6 +204,8 @@ class Preprocessor:
         the amount of time ahead to make predictions in milliseconds, 
         and the amount of time to move the window in milliseconds
 
+        Note that t_lookahead must be larger than or equal to t_stride
+
         return for each trial in X and y (N_1, N_2, ...) a series of windows with the desired characterstics
 
         ie: 
@@ -218,13 +220,16 @@ class Preprocessor:
 
         X_win = (20 ms*Xr, N, N_win 5)
         y_win = (10 ms*yr, 3, N, N_win, 5)
+        init_state = (10ms*yr, 3, N, 5)
 
         where the temporal offset between any (X,y) pair of windows is equal to t_lookahead:
-        X_win[:, 0, :] --> window encompassing 0 ms to 20 ms (absolute time)
-        y_win[:, :, 0, :] --> window encompassing 70 ms to 90 ms (absolute time)
+        X_win[:, :, 0, :] --> window encompassing 0 ms to 20 ms (absolute time)
+        y_win[:, :, :, 0, :] --> window encompassing 50 ms to 70 ms (absolute time)
 
-        X_win[:, 1, :] --> window encompassing 10 ms to 30 ms (absolute time)
-        y_win[:, :, 1, :] --> window encompassing 90 ms to 100 ms (absolute time)
+        X_win[:, :, 1, :] --> window encompassing 10 ms to 30 ms (absolute time)
+        y_win[:, :, :, 1, :] --> window encompassing 70 ms to 90 ms (absolute time)
+
+        init_state --> window encompassing labels from 30 ms to 50 ms (absolute time)
 
         
         Truncation of partial windows should avoid the biases that padding might introduce.
@@ -241,7 +246,11 @@ class Preprocessor:
 
         X_win = np.empty((int(t_win*Xr), N, num_win, C_x))
         y_win = np.empty((int(t_stride*yr), d, N, num_win, C_y))
+        init_state = np.empty((int(t_stride*yr), d, N, C_y))
         for i in range(N):
+            init_start = int(t_lookahead*yr) - int(t_stride*yr)
+            init_stop = init_start + int(t_stride*yr)
+            init_state[:, :, i, :] = y[init_start:init_stop, :, :, :]
             for j in range(num_win):
                 x_strt = j*int(t_stride*Xr)
                 x_stop = x_strt + int(t_win*Xr)
@@ -252,7 +261,7 @@ class Preprocessor:
                 y_win[:, :, i, j, :] = y[y_strt:y_stop, :, i, :]
 
 
-        return X_win, y_win
+        return X_win, (y_win, init_state)
 
 
     def rectify(self, X):
