@@ -310,7 +310,10 @@ class Jitter(torch.nn.Module):
         self.scale = scale
     
     def __call__(self, sample):
-        jitter = torch.Tensor(np.random.normal(loc = 0, scale = self.scale, size = sample.shape)).to(torch.float32)
+        if torch.cuda.is_available(): 
+            jitter = torch.Tensor(np.random.normal(loc = 0, scale = self.scale, size = sample.shape)).to(torch.float32).cuda()
+        else: 
+            jitter = torch.Tensor(np.random.normal(loc = 0, scale = self.scale, size = sample.shape)).to(torch.float32).cuda()
         
         return sample + jitter
     
