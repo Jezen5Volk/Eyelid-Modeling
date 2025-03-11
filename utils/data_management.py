@@ -240,11 +240,11 @@ class Preprocessor:
             for j in range(num_win):
                 x_strt = j*int(t_stride*Xr)
                 x_stop = x_strt + int(t_win*Xr)
-                X_win[:, i,j :] = X[x_strt:x_stop, i, :]
+                X_win[:, i, j, :] = X[x_strt:x_stop, i, :]
 
                 y_strt = j*int(t_stride*yr) + int(t_lookahead*yr)
                 y_stop = y_strt + int(t_stride*yr)
-                y_win[:, :, i, j, :] = y[y_strt:y_stop, :, i, j, :]
+                y_win[:, :, i, j, :] = y[y_strt:y_stop, :, i, :]
 
 
         return X_win, y_win
