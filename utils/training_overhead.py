@@ -18,10 +18,17 @@ class Trainer:
         self.verbose = verbose
         training_loss = []
         validation_loss = []
+        early_stopper = EarlyStopper()
         for t in range(self.epochs):
             print(f"Epoch {t+1}\n-------------------------------")
             training_loss.append(self.train_loop())
-            validation_loss.append(self.val_loop())
+            val_loss = self.val_loop()
+            validation_loss.append(val_loss)
+            
+            early_stopper(val_loss)
+            if early_stopper.early_stop:
+                print(f'Stopped early after epoch: {t}')
+                break
         print("Done!")
 
         return torch.Tensor(training_loss).cpu(), torch.Tensor(validation_loss).cpu()
@@ -144,6 +151,27 @@ class Trainer:
 
         return max_err, mean_err
 
+
+
+class EarlyStopper:
+    def __init__(self, patience = 10, min_delta = 0):
+        self.patience = patience
+        self.min_delta = min_delta
+        self.counter = 0
+        self.best_loss = None
+        self.early_stop = False
+
+
+    def __call__(self, val_loss):
+        if self.best_loss is None:
+            self.best_loss = val_loss
+        elif self.best_loss - val_loss > self.min_delta:
+            self.best_loss = val_loss
+            self.counter = 0
+        elif self.counter < self.patience:
+            self.counter += 1
+        else: 
+            self.early_stop = True
 
 
 
