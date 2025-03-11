@@ -250,7 +250,7 @@ class Preprocessor:
         for i in range(N):
             init_start = int(t_lookahead*yr) - int(t_stride*yr)
             init_stop = init_start + int(t_stride*yr)
-            init_state[:, :, i, :] = y[init_start:init_stop, :, :, :]
+            init_state[:, :, i, :] = y[init_start:init_stop, :, i, :]
             for j in range(num_win):
                 x_strt = j*int(t_stride*Xr)
                 x_stop = x_strt + int(t_win*Xr)
@@ -261,7 +261,7 @@ class Preprocessor:
                 y_win[:, :, i, j, :] = y[y_strt:y_stop, :, i, :]
 
 
-        return X_win, (y_win, init_state)
+        return X_win, y_win, init_state
 
 
     def rectify(self, X):
@@ -276,45 +276,49 @@ class Preprocessor:
 
     #Just rectify the EMG data
     def win_rect(self, X, y):
-        X_w, y_wr = self.window(X, y)
+        X_w, y_wr, init_state = self.window(X, y)
         X_wr = self.rectify(X_w)
-        return X_wr, y_wr
+        return X_wr, y_wr, init_state
     
 
     #Just return the FFT of the EMG data
     def win_fft(self, X, y):
-        X_w, y_wf = self.window(X, y)
+        X_w, y_wf, init_state = self.window(X, y)
         X_wf, _ = self.freq_spec(X_w)
-        return X_wf, y_wf
+        return X_wf, y_wf, init_state
 
 
 
 class Custom_EMG(Dataset):
-    def __init__(self, X, y, transform = None, target_transform = None):
+    def __init__(self, X, y, init_state, transform = None, target_transform = None):
         if torch.cuda.is_available(): 
             self.X = torch.Tensor(X).to(torch.float32).cuda()
             self.y = torch.Tensor(y).to(torch.float32).cuda()
+            self.init_state = torch.Tensor(init_state).to(torch.float32).cuda()
         else: 
             self.X = torch.Tensor(X).to(torch.float32)
             self.y = torch.Tensor(y).to(torch.float32)
+            self.init_state = torch.Tensor(init_state).to(torch.float32)
         self.transform = transform
         self.target_transform = target_transform
 
     def __len__(self):
-        return self.X.shape[1]
+        return self.y.shape[2]
     
     def __getitem__(self, idx):
         trial = torch.Tensor(self.X[:, idx, :]).to(torch.float32)
         label = torch.Tensor(self.y[:,:,idx, :]).to(torch.float32)
+        init = torch.Tensor(self.init_state[:, :, idx, :]).to(torch.float32)
         
-
         if self.transform:
             trial = self.transform(trial)
         
         if self.target_transform:
             label = self.target_transform(label)
 
-        return trial, label
+        X = (trial, init)
+
+        return X, label
     
     
 

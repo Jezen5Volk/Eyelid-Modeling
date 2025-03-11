@@ -62,14 +62,13 @@ class Trainer:
         running_loss = []
         running_merr = []
         err = 0
-        for batch, (X, y) in enumerate(self.train_dl):
+        for batch, (X, (y, P)) in enumerate(self.train_dl):
             #Handle device switching
             if torch.cuda.is_available(): 
                 pred = torch.zeros(y.shape).cuda()
             else: 
                 pred = torch.zeros(y.shape)
             
-            P = pred[:, :, :, 0, :]
             for win in range(X.shape[-2]): 
                 pred = pred.clone().detach()
                 pred[:, :, :, win, :] = self.model(X[:, :, win, :], P)
