@@ -1,7 +1,8 @@
 import torch
+import optuna
 
 class Trainer:
-    def __init__(self, train_dl, val_dl, model, loss_fn, optimizer, batch_size, epochs, patience = 10, delta = 0):
+    def __init__(self, train_dl, val_dl, model, loss_fn, optimizer, batch_size, trial, epochs = 10, patience = 10, delta = 0):
         if torch.cuda.is_available():
             self.model = model.cuda()
         else: 
@@ -14,6 +15,7 @@ class Trainer:
         self.epochs = epochs
         self.patience = patience
         self.delta = delta
+        self.trial = trial
 
     
     def train(self, verbose = False):
@@ -43,6 +45,13 @@ class Trainer:
             if early_stopper.early_stop:
                 print(f'Stopped early after epoch: {t}')
                 break
+
+            #Optuna pruning
+            if self.trial is not None: 
+                self.trial.report(val_loss, t)
+                if self.trial.should_prune():
+                    raise optuna.TrialPruned()
+
         print("Done!")
 
         metrics = {
@@ -83,7 +92,6 @@ class Trainer:
             running_loss.append(loss.item())
             running_merr.append(train_avg)
 
-            
             #backpropagation
             self.optimizer.zero_grad()
             loss.backward(retain_graph = True)

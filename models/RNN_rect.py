@@ -6,7 +6,7 @@ class EMG_RNN(torch.nn.Module):
         super().__init__()
         return
 
-    def initialize(self, shape_in, shape_out, params, idx = 0):
+    def initialize(self, shape_in, shape_out, params):
         '''
         Input shape: (N, L, W, C)
         where N is batch size, L is sequence length, W is num of windows, C is num of channels
@@ -20,16 +20,16 @@ class EMG_RNN(torch.nn.Module):
         N1 = 2
         #EMG Layers
         self.BN1 = torch.nn.BatchNorm1d(shape_in[-1])
-        self.RNN1 = torch.nn.RNN(input_size = shape_in[-1], hidden_size = shape_out[-1], num_layers = N1, batch_first = True, nonlinearity = 'relu', dropout = params['dropout'][idx])
+        self.RNN1 = torch.nn.RNN(input_size = shape_in[-1], hidden_size = shape_out[-1], num_layers = N1, batch_first = True, nonlinearity = 'relu', dropout = params['dropout'])
         self.aff1 = torch.nn.Linear(in_features = shape_in[1], out_features = shape_out[1])
         self.aff2 = torch.nn.Linear(in_features = shape_in[1], out_features = shape_out[1])
         self.aff3 = torch.nn.Linear(in_features = shape_in[1], out_features = shape_out[1])
 
         #Kinematic Layers
         self.BN2 = torch.nn.BatchNorm2d(shape_out[-1])
-        self.RNNX1 = torch.nn.RNN(input_size = shape_out[-1], hidden_size = shape_out[-1], num_layers = N1, batch_first = True, nonlinearity = 'relu', dropout = params['dropout'][idx])
-        self.RNNY1 = torch.nn.RNN(input_size = shape_out[-1], hidden_size = shape_out[-1], num_layers = N1, batch_first = True, nonlinearity = 'relu', dropout = params['dropout'][idx])
-        self.RNNZ1 = torch.nn.RNN(input_size = shape_out[-1], hidden_size = shape_out[-1], num_layers = N1, batch_first = True, nonlinearity = 'relu', dropout = params['dropout'][idx])
+        self.RNNX1 = torch.nn.RNN(input_size = shape_out[-1], hidden_size = shape_out[-1], num_layers = N1, batch_first = True, nonlinearity = 'relu', dropout = params['dropout'])
+        self.RNNY1 = torch.nn.RNN(input_size = shape_out[-1], hidden_size = shape_out[-1], num_layers = N1, batch_first = True, nonlinearity = 'relu', dropout = params['dropout'])
+        self.RNNZ1 = torch.nn.RNN(input_size = shape_out[-1], hidden_size = shape_out[-1], num_layers = N1, batch_first = True, nonlinearity = 'relu', dropout = params['dropout'])
 
         #property attributes
         self._shape_out = shape_out
@@ -72,3 +72,12 @@ class EMG_RNN(torch.nn.Module):
     @property
     def shape_out(self):
         return self._shape_out
+    
+
+
+class EMG_RNN_Wrapper():
+    def __init__(self):
+        return
+    def __call__(self):
+        model = EMG_RNN()
+        return model
