@@ -11,9 +11,9 @@ class Experiment:
     def __init__(self):
         return
 
-    def __call__(self, param_choices, data, model, n_trials = 100):
+    def __call__(self, param_choices, data, model, n_trials = 100, epochs = 50):
         study = optuna.create_study(direction='minimize')
-        study.optimize(Optunamize(param_choices, data, model), n_trials = 2, n_jobs = 2)#, n_jobs = -1)
+        study.optimize(Optunamize(param_choices, data, model, epochs), n_trials, n_jobs = -1)
         trial = study.best_trial
         
         return trial.params
@@ -49,16 +49,14 @@ class Experiment:
         loss_fn = torch.nn.MSELoss()
         optimizer = torch.optim.Adam(model.parameters(), lr = params['learning_rate'])
         
-        if epochs is None: 
-            trainer = Trainer(train_dataloader, val_dataloader, model, loss_fn, optimizer, int(params['batch_size']), trial)
-        else:
-            trainer = Trainer(train_dataloader, val_dataloader, model, loss_fn, optimizer, int(params['batch_size']), trial, epochs, patience)
+    
+        trainer = Trainer(train_dataloader, val_dataloader, model, loss_fn, optimizer, int(params['batch_size']), trial, epochs, patience)
         metrics = trainer.train()
 
         return metrics
     
 
-    def optuna_interface(self, trial, param_choices, data, model):
+    def optuna_interface(self, trial, param_choices, data, model, epochs):
         params = {}
         #Windowing Parameters
         params['t_win'] = trial.suggest_categorical('t_win', param_choices['t_win'])
@@ -75,18 +73,19 @@ class Experiment:
         params['learning_rate'] = trial.suggest_categorical('learning_rate', param_choices['learning_rate'])
         params['dropout'] = trial.suggest_categorical('dropout', param_choices['dropout'])
         
-        metrics = self.run_experiment(params, data, model, trial)
+        metrics = self.run_experiment(params, data, model, trial, epochs)
 
         return min(metrics['Validation Loss'])
     
 
 class Optunamize:
-    def __init__(self, param_choices, data, model):
+    def __init__(self, param_choices, data, model, epochs):
         self.param_choices = param_choices
         self.data = data
         self.model = model
+        self.epochs = epochs
     
     def __call__(self, trial):
         experiment = Experiment()
-        val_loss = experiment.optuna_interface(trial, self.param_choices, self.data, self.model)
+        val_loss = experiment.optuna_interface(trial, self.param_choices, self.data, self.model, self.epochs)
         return val_loss
