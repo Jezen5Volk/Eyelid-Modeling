@@ -23,7 +23,7 @@ class Experiment:
             metrics = self.run_experiment(params, data, epochs, patience, i)
             loss = min(metrics['Validation Loss'])
             best_loss.append(loss)
-        idx = np.argmin(best_loss)
+        idx = np.nanargmin(best_loss)
         best_params = self.best_params(params, idx)
 
         return best_params
@@ -92,7 +92,7 @@ class Experiment:
         (train_features, _), train_labels = next(iter(train_dataloader))
         model = EMG_RNN(train_features.size(), train_labels.size(), 2, params['dropout'][i])
         loss_fn = torch.nn.MSELoss()
-        optimizer = torch.optim.SGD(model.parameters(), lr = params['learning_rate'][i])
+        optimizer = torch.optim.Adam(model.parameters(), lr = params['learning_rate'][i])
         
         trainer = Trainer(train_dataloader, val_dataloader, model, loss_fn, optimizer, int(params['batch_size'][i]), epochs, patience)
         metrics = trainer.train()
