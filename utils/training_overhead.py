@@ -1,7 +1,7 @@
 import torch
 
 class Trainer:
-    def __init__(self, train_dl, val_dl, model, loss_fn, optimizer, batch_size, epochs):
+    def __init__(self, train_dl, val_dl, model, loss_fn, optimizer, batch_size, epochs, patience = 10, delta = 0):
         if torch.cuda.is_available():
             self.model = model.cuda()
         else: 
@@ -12,6 +12,8 @@ class Trainer:
         self.val_dl = val_dl
         self.batch_size = batch_size
         self.epochs = epochs
+        self.patience = patience
+        self.delta = delta
 
     
     def train(self, verbose = False):
@@ -22,7 +24,7 @@ class Trainer:
         validation_loss = []
         validation_avgerr = []
         validation_maxerr = []
-        early_stopper = EarlyStopper()
+        early_stopper = EarlyStopper(self.patience, self.delta)
         for t in range(self.epochs):
             print(f"Epoch {t+1}\n-------------------------------")
             train_loss, train_avgerr, train_maxerr = self.train_loop()
