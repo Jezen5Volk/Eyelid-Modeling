@@ -345,7 +345,6 @@ class MaskRand(torch.nn.Module):
         if self.p == 0:
             return sample
         elif int(self.p*sample.shape[0]) == 0:
-            print('This was the failure mode')
             return sample
         else: 
             idx = np.random.randint(int((1-self.p)*sample.shape[0]))

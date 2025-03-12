@@ -19,7 +19,7 @@ class Experiment:
         iters = len(params['t_win'])
         best_loss = []
         for i in range(iters):
-            print(f'************************************************************\nRunning Experiment {i} of {iters}\n************************************************************')
+            print(f'************************************************************\nRunning Experiment {i+1} of {iters}\n************************************************************')
             metrics = self.run_experiment(params, data, epochs, patience, i)
             loss = min(metrics['Validation Loss'])
             best_loss.append(loss)
@@ -93,7 +93,7 @@ class Experiment:
         model = EMG_RNN(train_features.size(), train_labels.size(), 2, params['dropout'][i])
         loss_fn = torch.nn.MSELoss()
         optimizer = torch.optim.SGD(model.parameters(), lr = params['learning_rate'][i])
-
+        
         trainer = Trainer(train_dataloader, val_dataloader, model, loss_fn, optimizer, int(params['batch_size'][i]), epochs, patience)
         metrics = trainer.train()
 
@@ -102,18 +102,18 @@ class Experiment:
 
     def best_params(self, params, idx):
         #windowing parameters
-        params['t_win'] = params['t_win'][idx]
-        params['t_stride'] = params['t_stride'][idx]
-        params['t_lookahead'] = params['t_lookahead'][idx]
+        params['t_win'] = [params['t_win'][idx]]
+        params['t_stride'] = [params['t_stride'][idx]]
+        params['t_lookahead'] = [params['t_lookahead'][idx]]
 
         #data transformation parameters
-        params['p_transform'] = params['p_transform'][idx]
-        params['sigma'] = params['sigma'][idx]
-        params['p_mask'] = params['p_mask'][idx]
+        params['p_transform'] = [params['p_transform'][idx]]
+        params['sigma'] = [params['sigma'][idx]]
+        params['p_mask'] = [params['p_mask'][idx]]
 
         #Learning parameters
-        params['batch_size'] = params['batch_size'][idx]
-        params['learning_rate'] = params['learning_rate'][idx]
-        params['dropout'] = params['dropout'][idx]
+        params['batch_size'] = [params['batch_size'][idx]]
+        params['learning_rate'] = [params['learning_rate'][idx]]
+        params['dropout'] = [params['dropout'][idx]]
 
         return params
