@@ -19,7 +19,7 @@ class Experiment:
         iters = len(params['t_win'])
         best_loss = []
         for i in range(iters):
-            print(f'Running Experiment {i} of {iters}')
+            print(f'************************************************************\nRunning Experiment {i} of {iters}\n************************************************************')
             metrics = self.run_experiment(params, data, epochs, patience, i)
             loss = min(metrics['Validation Loss'])
             best_loss.append(loss)
@@ -81,10 +81,10 @@ class Experiment:
         transform = v2.RandomApply(torch.nn.ModuleList([Jitter(params['sigma'][i]), MaskRand(params['p_mask'][i])]), p = params['p_transform'][i])
 
         train_data = Custom_EMG(X_train_wr, y_train_wr, init_state_train, transform = transform)
-        train_dataloader = DataLoader(train_data, params['batch_size'][i], shuffle = True)
+        train_dataloader = DataLoader(train_data, int(params['batch_size'][i]), shuffle = True)
 
         val_data = Custom_EMG(X_val_wr, y_val_wr, init_state_val, transform = None)
-        val_dataloader = DataLoader(val_data, params['batch_size'][i], shuffle = False)
+        val_dataloader = DataLoader(val_data, int(params['batch_size'][i]), shuffle = False)
 
         '''
         Training
@@ -94,7 +94,7 @@ class Experiment:
         loss_fn = torch.nn.MSELoss()
         optimizer = torch.optim.SGD(model.parameters(), lr = params['learning_rate'][i])
 
-        trainer = Trainer(train_dataloader, val_dataloader, model, loss_fn, optimizer, params['batch_size'][i], epochs, patience)
+        trainer = Trainer(train_dataloader, val_dataloader, model, loss_fn, optimizer, int(params['batch_size'][i]), epochs, patience)
         metrics = trainer.train()
 
         return metrics
