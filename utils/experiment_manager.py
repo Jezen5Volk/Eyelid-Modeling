@@ -65,7 +65,7 @@ class Experiment:
         return params
 
 
-    def run_experiment(self, params, data, model):
+    def run_experiment(self, params, data, model, trial = None):
         X_train, y_train = data["X_train"], data["y_train"]
         X_val, y_val = data["X_val"], data["y_val"]
 
@@ -94,7 +94,7 @@ class Experiment:
         loss_fn = torch.nn.MSELoss()
         optimizer = torch.optim.Adam(model.parameters(), lr = params['learning_rate'])
         
-        trainer = Trainer(train_dataloader, val_dataloader, model, loss_fn, optimizer, int(params['batch_size']))
+        trainer = Trainer(train_dataloader, val_dataloader, model, loss_fn, optimizer, int(params['batch_size']), trial)
         metrics = trainer.train()
 
         return metrics
@@ -116,6 +116,6 @@ class Experiment:
         params['learning_rate'] = trial.suggest_categorical('learning_rate', param_choices['learning_rate'])
         params['dropout'] = trial.suggest_categorical('dropout', param_choices['dropout'])
         
-        metrics = self.run_experiment(params, data, model)
+        metrics = self.run_experiment(params, data, model, trial)
 
         return np.nanmin(metrics['Validation Loss'])
