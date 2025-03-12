@@ -1,7 +1,7 @@
 import torch
 
 class Trainer:
-    def __init__(self, train_dl, val_dl, model, loss_fn, optimizer, batch_size, epochs, patience = 10, delta = 0):
+    def __init__(self, train_dl, val_dl, model, loss_fn, optimizer, batch_size, epochs = 10, patience = 10, delta = 0):
         if torch.cuda.is_available():
             self.model = model.cuda()
         else: 
