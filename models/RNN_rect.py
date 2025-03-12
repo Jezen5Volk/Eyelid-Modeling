@@ -2,7 +2,11 @@ import torch
 
 class EMG_RNN(torch.nn.Module):
 
-    def __init__(self, shape_in, shape_out, N1, dropout):
+    def __init__(self):
+        super().__init__()
+        return
+
+    def initialize(self, shape_in, shape_out, params, idx = 0):
         '''
         Input shape: (N, L, W, C)
         where N is batch size, L is sequence length, W is num of windows, C is num of channels
@@ -13,23 +17,22 @@ class EMG_RNN(torch.nn.Module):
         Note that sequence length will always differ and number of channels may differ between i/o
         The 3 in the output shape refers to cartesian XYZ coordinate dimensions
         '''
-        super().__init__()
+        N1 = 2
         #EMG Layers
         self.BN1 = torch.nn.BatchNorm1d(shape_in[-1])
-        self.RNN1 = torch.nn.RNN(input_size = shape_in[-1], hidden_size = shape_out[-1], num_layers = N1, batch_first = True, nonlinearity = 'relu', dropout = dropout)
+        self.RNN1 = torch.nn.RNN(input_size = shape_in[-1], hidden_size = shape_out[-1], num_layers = N1, batch_first = True, nonlinearity = 'relu', dropout = params['dropout'][idx])
         self.aff1 = torch.nn.Linear(in_features = shape_in[1], out_features = shape_out[1])
         self.aff2 = torch.nn.Linear(in_features = shape_in[1], out_features = shape_out[1])
         self.aff3 = torch.nn.Linear(in_features = shape_in[1], out_features = shape_out[1])
 
         #Kinematic Layers
         self.BN2 = torch.nn.BatchNorm2d(shape_out[-1])
-        self.RNNX1 = torch.nn.RNN(input_size = shape_out[-1], hidden_size = shape_out[-1], num_layers = N1, batch_first = True, nonlinearity = 'relu', dropout = dropout)
-        self.RNNY1 = torch.nn.RNN(input_size = shape_out[-1], hidden_size = shape_out[-1], num_layers = N1, batch_first = True, nonlinearity = 'relu', dropout = dropout)
-        self.RNNZ1 = torch.nn.RNN(input_size = shape_out[-1], hidden_size = shape_out[-1], num_layers = N1, batch_first = True, nonlinearity = 'relu', dropout = dropout)
+        self.RNNX1 = torch.nn.RNN(input_size = shape_out[-1], hidden_size = shape_out[-1], num_layers = N1, batch_first = True, nonlinearity = 'relu', dropout = params['dropout'][idx])
+        self.RNNY1 = torch.nn.RNN(input_size = shape_out[-1], hidden_size = shape_out[-1], num_layers = N1, batch_first = True, nonlinearity = 'relu', dropout = params['dropout'][idx])
+        self.RNNZ1 = torch.nn.RNN(input_size = shape_out[-1], hidden_size = shape_out[-1], num_layers = N1, batch_first = True, nonlinearity = 'relu', dropout = params['dropout'][idx])
 
         #property attributes
         self._shape_out = shape_out
-
         
     def forward(self, X, pred):
         '''

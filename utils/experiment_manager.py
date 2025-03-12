@@ -11,7 +11,7 @@ class Experiment:
         return
 
 
-    def __call__(self, params, data, epochs = 20, patience = 2):
+    def __call__(self, params, data, model, epochs = 20, patience = 2):
         params = self.form_experiments(params)
         self.epochs = epochs
         self.patience = patience
@@ -20,7 +20,7 @@ class Experiment:
         best_loss = []
         for i in range(iters):
             print(f'************************************************************\nRunning Experiment {i+1} of {iters}\n************************************************************')
-            metrics = self.run_experiment(params, data, epochs, patience, i)
+            metrics = self.run_experiment(params, data, model, epochs, patience, i)
             loss = min(metrics['Validation Loss'])
             best_loss.append(loss)
         idx = np.nanargmin(best_loss)
@@ -65,7 +65,7 @@ class Experiment:
         return params
 
 
-    def run_experiment(self, params, data, epochs, patience, i = 0):
+    def run_experiment(self, params, data, model, epochs, patience, i = 0):
         X_train, y_train = data["X_train"], data["y_train"]
         X_val, y_val = data["X_val"], data["y_val"]
 
@@ -90,7 +90,7 @@ class Experiment:
         Training
         '''
         (train_features, _), train_labels = next(iter(train_dataloader))
-        model = EMG_RNN(train_features.size(), train_labels.size(), 2, params['dropout'][i])
+        model.initialize(train_features.size(), train_labels.size(), params, i)
         loss_fn = torch.nn.MSELoss()
         optimizer = torch.optim.Adam(model.parameters(), lr = params['learning_rate'][i])
         
