@@ -1,4 +1,5 @@
 import torch
+import optuna
 import numpy as np
 from torchvision.transforms import v2
 from torch.utils.data import DataLoader
@@ -11,59 +12,14 @@ class Experiment:
         return
 
 
-    def __call__(self, params, data, model, epochs = 20, patience = 2):
-        params = self.form_experiments(params)
-        self.epochs = epochs
-        self.patience = patience
-
-        iters = len(params['t_win'])
-        best_loss = []
-        for i in range(iters):
-            print(f'************************************************************\nRunning Experiment {i+1} of {iters}\n************************************************************')
-            metrics = self.run_experiment(params, data, model, epochs, patience, i)
-            loss = min(metrics['Validation Loss'])
-            best_loss.append(loss)
-        idx = np.nanargmin(best_loss)
-        best_params = self.best_params(params, idx)
-
-        return best_params
+    def __call__(self, param_choices, data, model, n_trials = 100):
+       
+        study = optuna.create_study(direction='minimize')
+        study.optimize(lambda trial: self.optuna_interface(trial, param_choices, data, model), n_trials, n_jobs = -1)
+        trial = study.best_trial
         
-
-    def form_experiments(self, params):
-        #windowing parameters
-        t_win = params['t_win']
-        t_stride = params['t_stride']
-        t_lookahead = params['t_lookahead']
-
-        #data transformation parameters
-        p_transform = params['p_transform']
-        sigma = params['sigma']
-        p_mask = params['p_mask']
-
-        #Learning parameters
-        batch_size = params['batch_size']
-        lr = params['learning_rate']
-        dropout = params['dropout']
-
-        t_win, t_stride, t_lookahead, p_transform, sigma, p_mask, batch_size, lr, dropout = np.meshgrid(t_win, t_stride, t_lookahead, p_transform, sigma, p_mask, batch_size, lr, dropout)
-
-        #windowing parameters
-        params['t_win'] = t_win.ravel()
-        params['t_stride'] = t_stride.ravel()
-        params['t_lookahead'] = t_lookahead.ravel()
-
-        #data transformation parameters
-        params['p_transform'] = p_transform.ravel()
-        params['sigma'] = sigma.ravel()
-        params['p_mask'] = p_mask.ravel()
-
-        #Learning parameters
-        params['batch_size'] = batch_size.ravel()
-        params['learning_rate'] = lr.ravel()
-        params['dropout'] = dropout.ravel()
-
-        return params
-
+        return trial.params
+        
 
     def run_experiment(self, params, data, model, trial = None):
         X_train, y_train = data["X_train"], data["y_train"]
@@ -99,6 +55,7 @@ class Experiment:
 
         return metrics
     
+
     def optuna_interface(self, trial, param_choices, data, model):
         params = {}
         #Windowing Parameters

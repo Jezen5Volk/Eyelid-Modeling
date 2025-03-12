@@ -92,7 +92,6 @@ class Trainer:
             running_loss.append(loss.item())
             running_merr.append(train_avg)
 
-            
             #backpropagation
             self.optimizer.zero_grad()
             loss.backward(retain_graph = True)
