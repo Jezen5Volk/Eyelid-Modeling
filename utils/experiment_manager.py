@@ -11,19 +11,18 @@ class Experiment:
     def __init__(self):
         return
 
-
     def __call__(self, param_choices, data, model, n_trials = 100):
-       
         study = optuna.create_study(direction='minimize')
-        study.optimize(lambda trial: self.optuna_interface(trial, param_choices, data, model), n_trials, n_jobs = -1)
+        study.optimize(Optunamize(param_choices, data, model), n_trials = 2, n_jobs = 2)#, n_jobs = -1)
         trial = study.best_trial
         
         return trial.params
         
 
-    def run_experiment(self, params, data, model, trial = None):
+    def run_experiment(self, params, data, model, trial = None, epochs = None, patience = 5):
         X_train, y_train = data["X_train"], data["y_train"]
         X_val, y_val = data["X_val"], data["y_val"]
+        model = model() #call wrapper object to instantiate fresh model object every time run_experiment is called
 
         '''
         Preprocessing
@@ -50,7 +49,10 @@ class Experiment:
         loss_fn = torch.nn.MSELoss()
         optimizer = torch.optim.Adam(model.parameters(), lr = params['learning_rate'])
         
-        trainer = Trainer(train_dataloader, val_dataloader, model, loss_fn, optimizer, int(params['batch_size']), trial)
+        if epochs is None: 
+            trainer = Trainer(train_dataloader, val_dataloader, model, loss_fn, optimizer, int(params['batch_size']), trial)
+        else:
+            trainer = Trainer(train_dataloader, val_dataloader, model, loss_fn, optimizer, int(params['batch_size']), trial, epochs, patience)
         metrics = trainer.train()
 
         return metrics
@@ -75,4 +77,16 @@ class Experiment:
         
         metrics = self.run_experiment(params, data, model, trial)
 
-        return np.nanmin(metrics['Validation Loss'])
+        return min(metrics['Validation Loss'])
+    
+
+class Optunamize:
+    def __init__(self, param_choices, data, model):
+        self.param_choices = param_choices
+        self.data = data
+        self.model = model
+    
+    def __call__(self, trial):
+        experiment = Experiment()
+        val_loss = experiment.optuna_interface(trial, self.param_choices, self.data, self.model)
+        return val_loss

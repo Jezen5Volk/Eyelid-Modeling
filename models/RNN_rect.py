@@ -72,3 +72,12 @@ class EMG_RNN(torch.nn.Module):
     @property
     def shape_out(self):
         return self._shape_out
+    
+
+
+class EMG_RNN_Wrapper():
+    def __init__(self):
+        return
+    def __call__(self):
+        model = EMG_RNN()
+        return model
