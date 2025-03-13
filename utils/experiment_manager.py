@@ -4,7 +4,7 @@ import numpy as np
 from torchvision.transforms import v2
 from torch.utils.data import DataLoader
 from utils.data_management import Mat2TVT, Preprocessor, Custom_EMG, Jitter, MaskRand
-from models.RNN_rect import EMG_RNN
+from models.EMG_RNN import EMG_RNN
 from utils.training_overhead import Trainer
 
 class Experiment:
