@@ -62,7 +62,6 @@ class Trainer:
             'Validation Avg Marker Error': torch.Tensor(validation_avgerr).cpu(),
             'Validation Max Marker Error': torch.Tensor(validation_maxerr).cpu(), 
             'Best Weights': early_stopper.best_weights,
-            'Model': self.model
             }
 
         return metrics
@@ -169,8 +168,9 @@ class Trainer:
         
         print(f"Test Error: \n Max Marker Error: {(err):>0.1f}%, Avg Marker Error: {(test_merr):>0.1f}%, Avg loss: {test_loss:>8f} \n")
         metrics = {
-                    "Test Max Marker Error": err, 
-                    "Test Avg Marker Error": test_merr
+                    "Test Max Marker Error": torch.Tensor(err).cpu(), 
+                    "Test Avg Marker Error": torch.Tensor(test_merr).cpu(), 
+                    "Test Loss": torch.Tensor(test_loss).cpu()
                    }
 
 

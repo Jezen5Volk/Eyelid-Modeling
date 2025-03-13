@@ -78,7 +78,7 @@ class Experiment:
         return min(metrics['Validation Loss'])
     
 
-    def test_model(self, best_params, data, model):
+    def test_model(self, best_params, data, model, weights):
         '''
         Preprocessing
         '''
@@ -92,7 +92,10 @@ class Experiment:
         Testing
         '''
         loss_fn = torch.nn.MSELoss()
-        tester = Trainer(None, None, model, loss_fn, None, None) #None parameters are relevant for model training
+        (test_features, _), test_labels = next(iter(test_dataloader))
+        model.initialize(test_features.size(), test_labels.size(), best_params)
+        model.load_state_dict(weights)
+        tester = Trainer(None, None, model, loss_fn, None, None, None) #None parameters are relevant for model training
         test_metrics, preds = tester.test_model(test_dataloader)
 
         return test_metrics, preds
