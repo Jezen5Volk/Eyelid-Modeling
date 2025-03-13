@@ -187,9 +187,9 @@ class Mat2TVT:
 
 
 class Preprocessor:
-    def __init__(self, t_win, t_loookahead, t_stride, Xr = 6103.5, yr = 400):
+    def __init__(self, t_win, t_lookahead, t_stride, Xr = 6103.5, yr = 400):
         self.t_win = t_win
-        self.t_lookahead = t_loookahead
+        self.t_lookahead = t_lookahead
         self.t_stride = t_stride
         self.Xr = Xr
         self.yr = yr
@@ -242,7 +242,7 @@ class Preprocessor:
         yr = self.yr
         Xr = self.Xr
 
-        num_win = (t_y - int(t_lookahead*yr) - int(t_win*yr)) // int(t_stride*yr)
+        num_win = (t_y - int(t_lookahead*yr) - int(t_win*yr)) // int(t_stride*yr) - 1
 
         X_win = np.empty((int(t_win*Xr), N, num_win, C_x))
         y_win = np.empty((int(t_stride*yr), d, N, num_win, C_y))
