@@ -83,7 +83,7 @@ class Experiment:
         
         metrics = self.run_experiment(params, data, model, trial, epochs, patience)
 
-        return min(metrics['Validation Loss'])
+        return min(metrics['Validation Avg Marker Error'])
     
 
     def test_model(self, best_params, data, model, weights):
@@ -125,5 +125,5 @@ class Optunamize:
     
     def __call__(self, trial):
         experiment = Experiment()
-        val_loss = experiment.optuna_interface(trial, self.param_choices, self.data, self.model, self.epochs, self.patience)
-        return val_loss
+        trial_metric = experiment.optuna_interface(trial, self.param_choices, self.data, self.model, self.epochs, self.patience)
+        return trial_metric

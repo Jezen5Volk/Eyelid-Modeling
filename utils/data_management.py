@@ -271,7 +271,6 @@ class Preprocessor:
     def freq_spec(self, X): 
         fft = np.fft.fft(X, axis = 0)
         fft_amp = np.sqrt(fft.real**2 + fft.imag**2)
-        print(fft_amp.shape)
         fft_bins = np.fft.fftfreq(X.shape[0], d = 1/self.Xr)
         return np.log(fft_amp), fft_bins
     
