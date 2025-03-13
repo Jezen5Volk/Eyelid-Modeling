@@ -11,9 +11,9 @@ class Experiment:
     def __init__(self):
         return
 
-    def __call__(self, param_choices, data, model, n_trials = 100, epochs = 50):
+    def __call__(self, param_choices, data, model, n_trials = 100, epochs = 50, patience = 50):
         study = optuna.create_study(direction='minimize')
-        study.optimize(Optunamize(param_choices, data, model, epochs), n_trials, n_jobs = -1)
+        study.optimize(Optunamize(param_choices, data, model, epochs, patience), n_trials, n_jobs = -1)
         trial = study.best_trial
         
         return trial.params
@@ -56,7 +56,7 @@ class Experiment:
         return metrics
     
 
-    def optuna_interface(self, trial, param_choices, data, model, epochs):
+    def optuna_interface(self, trial, param_choices, data, model, epochs, patience):
         params = {}
         #Windowing Parameters
         params['t_win'] = trial.suggest_categorical('t_win', param_choices['t_win'])
@@ -78,7 +78,7 @@ class Experiment:
         params['RNN_depth'] = trial.suggest_categorical('RNN_depth', param_choices['RNN_depth'])
 
         
-        metrics = self.run_experiment(params, data, model, trial, epochs)
+        metrics = self.run_experiment(params, data, model, trial, epochs, patience)
 
         return min(metrics['Validation Loss'])
     
@@ -110,13 +110,14 @@ class Experiment:
     
 
 class Optunamize:
-    def __init__(self, param_choices, data, model, epochs):
+    def __init__(self, param_choices, data, model, epochs, patience):
         self.param_choices = param_choices
         self.data = data
         self.model = model
         self.epochs = epochs
+        self.patience = patience
     
     def __call__(self, trial):
         experiment = Experiment()
-        val_loss = experiment.optuna_interface(trial, self.param_choices, self.data, self.model, self.epochs)
+        val_loss = experiment.optuna_interface(trial, self.param_choices, self.data, self.model, self.epochs, self.patience)
         return val_loss
