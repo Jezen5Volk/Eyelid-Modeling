@@ -28,8 +28,12 @@ class Experiment:
         '''
         #Window and rectify the EMG data
         preprocessor = Preprocessor(params['t_win'], params['t_lookahead'], params['t_stride'])
-        X_train_wr, y_train_wr, init_state_train = preprocessor.win_rect(X_train, y_train)
-        X_val_wr, y_val_wr, init_state_val = preprocessor.win_rect(X_val, y_val)
+        if params['win_mode'] == 'win_rect':
+            X_train_wr, y_train_wr, init_state_train = preprocessor.win_rect(X_train, y_train)
+            X_val_wr, y_val_wr, init_state_val = preprocessor.win_rect(X_val, y_val)
+        elif params['win_mode'] == 'win_fft':
+            X_train_wr, y_train_wr, init_state_train = preprocessor.win_fft(X_train, y_train)
+            X_val_wr, y_val_wr, init_state_val = preprocessor.win_fft(X_val, y_val)
 
         #Load into custom torch.Dataset object, which applies our data augmentation (Jitter, random masking)
         transform = v2.RandomApply(torch.nn.ModuleList([Jitter(params['sigma']), MaskRand(params['p_mask'])]), p = params['p_transform'])
@@ -61,6 +65,7 @@ class Experiment:
         params['t_win'] = trial.suggest_categorical('t_win', param_choices['t_win'])
         params['t_stride'] = trial.suggest_categorical('t_stride', param_choices['t_stride'])
         params['t_lookahead'] = trial.suggest_categorical('t_lookahead', param_choices['t_lookahead'])
+        params['win_mode'] = trial.suggest_categorical('win_mode', param_choices['win_mode'])
 
         #Data Transformation Parameters
         params['p_transform'] = trial.suggest_categorical('p_transform', param_choices['p_transform'])
@@ -75,7 +80,6 @@ class Experiment:
         #Model Parameters
         params['RNN_hdim'] = trial.suggest_categorical('RNN_hdim', param_choices['RNN_hdim'])
         params['RNN_depth'] = trial.suggest_categorical('RNN_depth', param_choices['RNN_depth'])
-
         
         metrics = self.run_experiment(params, data, model, trial, epochs, patience)
 
@@ -88,7 +92,10 @@ class Experiment:
         '''
         X_test, y_test = data["X_test"], data["y_test"]
         preprocessor = Preprocessor(best_params['t_win'], best_params['t_lookahead'], best_params['t_stride'])
-        X_test_wr, y_test_wr, init_state_test = preprocessor.win_rect(X_test, y_test)
+        if best_params['win_mode'] == 'win_rect':
+            X_test_wr, y_test_wr, init_state_test = preprocessor.win_rect(X_test, y_test)
+        elif best_params['win_mode'] == 'win_fft':
+            X_test_wr, y_test_wr, init_state_test = preprocessor.win_fft(X_test, y_test)
         test_data = Custom_EMG(X_test_wr, y_test_wr, init_state_test, transform = None)
         test_dataloader = DataLoader(test_data, int(best_params['batch_size']), shuffle = False)
 
