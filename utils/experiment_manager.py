@@ -72,6 +72,11 @@ class Experiment:
         params['batch_size'] = trial.suggest_categorical('batch_size', param_choices['batch_size'])
         params['learning_rate'] = trial.suggest_categorical('learning_rate', param_choices['learning_rate'])
         params['dropout'] = trial.suggest_categorical('dropout', param_choices['dropout'])
+
+        #Model Parameters
+        params['RNN_hdim'] = trial.suggest_categorical('RNN_hdim', param_choices['RNN_hdim'])
+        params['RNN_depth'] = trial.suggest_categorical('RNN_depth', param_choices['RNN_depth'])
+
         
         metrics = self.run_experiment(params, data, model, trial, epochs)
 
