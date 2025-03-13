@@ -41,7 +41,7 @@ class Trainer:
             validation_maxerr.append(val_maxerr)
 
             #early stopping
-            early_stopper(val_loss)
+            early_stopper(val_loss, self.model)
             if early_stopper.early_stop:
                 print(f'Stopped early after epoch: {t}')
                 break
@@ -60,7 +60,9 @@ class Trainer:
             'Training Max Marker Error': torch.Tensor(training_maxerr).cpu(),
             'Validation Loss': torch.Tensor(validation_loss).cpu(),
             'Validation Avg Marker Error': torch.Tensor(validation_avgerr).cpu(),
-            'Validation Max Marker Error': torch.Tensor(validation_maxerr).cpu()
+            'Validation Max Marker Error': torch.Tensor(validation_maxerr).cpu(), 
+            'Best Weights': early_stopper.best_weights,
+            'Model': self.model
             }
 
         return metrics
@@ -166,8 +168,13 @@ class Trainer:
         test_loss /= num_batches
         
         print(f"Test Error: \n Max Marker Error: {(err):>0.1f}%, Avg Marker Error: {(test_merr):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+        metrics = {
+                    "Test Max Marker Error": err, 
+                    "Test Avg Marker Error": test_merr
+                   }
 
-        return test_loss
+
+        return metrics, pred
 
     
     def two_norm3D(self, pred, y, eps = 1e-8):
@@ -200,15 +207,18 @@ class EarlyStopper:
         self.min_delta = min_delta
         self.counter = 0
         self.best_loss = None
+        self.best_weights = None
         self.early_stop = False
 
 
-    def __call__(self, val_loss):
+    def __call__(self, val_loss, model):
         if self.best_loss is None:
             self.best_loss = val_loss
+            self.best_weights = model.state_dict()
         elif self.best_loss - val_loss > self.min_delta:
             self.best_loss = val_loss
             self.counter = 0
+            self.best_weights = model.state_dict()
         elif self.counter < self.patience:
             self.counter += 1
         else: 

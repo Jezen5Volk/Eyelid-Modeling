@@ -78,6 +78,29 @@ class Experiment:
         return min(metrics['Validation Loss'])
     
 
+    def test_model(self, best_params, data, model):
+        '''
+        Preprocessing
+        '''
+        X_test, y_test = data["X_test"], data["y_test"]
+        preprocessor = Preprocessor(best_params['t_win'], best_params['t_lookahead'], best_params['t_stride'])
+        X_test_wr, y_test_wr, init_state_test = preprocessor.win_rect(X_test, y_test)
+        test_data = Custom_EMG(X_test_wr, y_test_wr, init_state_test, transform = None)
+        test_dataloader = DataLoader(test_data, int(best_params['batch_size']), shuffle = False)
+
+        '''
+        Testing
+        '''
+        loss_fn = torch.nn.MSELoss()
+        tester = Trainer(None, None, model, loss_fn, None, None) #None parameters are relevant for model training
+        test_metrics, preds = tester.test_model(test_dataloader)
+
+        return test_metrics, preds
+        
+
+            
+    
+
 class Optunamize:
     def __init__(self, param_choices, data, model, epochs):
         self.param_choices = param_choices
