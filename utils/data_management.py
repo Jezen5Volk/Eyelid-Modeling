@@ -218,7 +218,7 @@ class Preprocessor:
 
         Then we would expect to return 
 
-        X_win = (20 ms*Xr, N, N_win 5)
+        X_win = (20 ms*Xr, N, N_win, 5)
         y_win = (10 ms*yr, 3, N, N_win, 5)
         init_state = (10ms*yr, 3, N, 5)
 
@@ -234,7 +234,7 @@ class Preprocessor:
         
         Truncation of partial windows should avoid the biases that padding might introduce.
         '''
-        _, N, C_x = np.shape(X)
+        t_x, N, C_x = np.shape(X)
         t_y, d, N, C_y = np.shape(y)
         t_win = self.t_win*1e-3
         t_lookahead = self.t_lookahead*1e-3
@@ -242,8 +242,8 @@ class Preprocessor:
         yr = self.yr
         Xr = self.Xr
 
-        num_win = (t_y - int(t_lookahead*yr) - int(t_win*yr)) // int(t_stride*yr) - 1
-
+        num_win = int((t_y - t_lookahead*yr)//(t_stride*yr))
+    
         X_win = np.empty((int(t_win*Xr), N, num_win, C_x))
         y_win = np.empty((int(t_stride*yr), d, N, num_win, C_y))
         init_state = np.empty((int(t_stride*yr), d, N, C_y))
@@ -252,11 +252,11 @@ class Preprocessor:
             init_stop = init_start + int(t_stride*yr)
             init_state[:, :, i, :] = y[init_start:init_stop, :, i, :]
             for j in range(num_win):
-                x_strt = j*int(t_stride*Xr)
+                x_strt = int(j*t_stride*Xr)
                 x_stop = x_strt + int(t_win*Xr)
                 X_win[:, i, j, :] = X[x_strt:x_stop, i, :]
 
-                y_strt = j*int(t_stride*yr) + int(t_lookahead*yr)
+                y_strt = int(j*t_stride*yr + t_lookahead*yr)
                 y_stop = y_strt + int(t_stride*yr)
                 y_win[:, :, i, j, :] = y[y_strt:y_stop, :, i, :]
 
