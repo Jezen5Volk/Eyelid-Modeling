@@ -111,6 +111,8 @@ class Trainer:
         val_loss = 0
 
         with torch.no_grad():
+            preds = ()
+            Y = ()
             for (X,P), y in self.val_dl:
                 #Handle device switching
                 if torch.cuda.is_available(): 
