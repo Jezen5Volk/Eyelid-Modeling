@@ -10,9 +10,9 @@ class Experiment:
     def __init__(self):
         return
 
-    def __call__(self, param_choices, data, model, n_trials = 100, epochs = 50, patience = 50):
+    def __call__(self, param_choices, data, model, n_trials = 100, epochs = 50, patience = 50, gcollect = False):
         study = optuna.create_study(direction='minimize')
-        study.optimize(Optunamize(param_choices, data, model, epochs, patience), n_trials, n_jobs = -1, gc_after_trial=True)
+        study.optimize(Optunamize(param_choices, data, model, epochs, patience), n_trials, n_jobs = -1, gc_after_trial=gcollect)
         trial = study.best_trial
         
         return trial.params
