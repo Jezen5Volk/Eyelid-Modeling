@@ -8,23 +8,50 @@ class EMG_RNN_CNN(torch.nn.Module):
 
     def initialize(self, shape_in, shape_out, params):
         '''
-        Input shape: (N, L, W, C)
+        Desired Input shape: (N, L, W, C)
         where N is batch size, L is sequence length, W is num of windows, C is num of channels
 
-        Output shape: (N, L, 3, W, C)
+        Desired Output shape: (N, L, 3, W, C)
         where N is batch size, L is sequence length, W is num of windows, C is num of channels
 
         Note that sequence length will always differ and number of channels may differ between i/o
         The 3 in the output shape refers to cartesian XYZ coordinate dimensions
+
+
+        shape_in forward call: (N, L, C)
+        shape_out: (N, L, 3, C)
         '''
-        
-        #EMG Layers
-        self.BN1 = torch.nn.BatchNorm1d(shape_in[-1])
-        self.RNN1 = torch.nn.RNN(input_size = shape_in[-1], hidden_size = params['RNN_hdim'], num_layers = params['RNN_depth'], batch_first = True, nonlinearity = 'relu', dropout = params['dropout'])
-        self.RNN2 = torch.nn.RNN(input_size = params['RNN_hdim'], hidden_size = shape_out[-1], num_layers = 1, batch_first = True, nonlinearity = 'relu')
-        self.aff1 = torch.nn.Linear(in_features = shape_in[1], out_features = shape_out[1])
-        self.aff2 = torch.nn.Linear(in_features = shape_in[1], out_features = shape_out[1])
-        self.aff3 = torch.nn.Linear(in_features = shape_in[1], out_features = shape_out[1])
+        self._shape_out = shape_out
+        _, L_in, _, C_in = shape_in
+        _, L_out, _, _, C_out = shape_out
+        L_result = L_in - 2*params['CNN_kernel'] + 1
+        C_result = C_out - 2*params['CNN_kernel'] + 1
+
+        self.EMG = torch.nn.ModuleDict({
+            'spatial_CNN': torch.nn.ModuleList([
+                torch.nn.BatchNorm1d(C_in), 
+                torch.nn.Conv1d(C_in, C_out, params['CNN_kernel']),
+                torch.nn.MaxPool1d(params['CNN_kernel']),
+            ]), 
+
+            'temporal_CNN': torch.nn.ModuleList([
+                torch.nn.BatchNorm1d(L_result*2), 
+                torch.nn.Conv1d(L_result*2, L_out, params['CNN_kernel']),
+                torch.nn.MaxPool1d(params['CNN_kernel']),
+            ]), 
+
+            'RNN': torch.nn.ModuleList([
+                torch.nn.BatchNorm1d(C_result*2),
+                torch.nn.RNN(C_result*2, params['RNN_hdim'], params['RNN_depth'], batch_first = True, nonlinearity = 'relu', dropout = params['dropout']),
+                torch.nn.RNN(input_size = params['RNN_hdim'], hidden_size = C_out, num_layers = 1, batch_first = True, nonlinearity = 'relu')
+            ]),
+
+            'affine': torch.nn.ModuleList([
+                torch.nn.Linear(L_out, L_out), 
+                torch.nn.Linear(L_out, L_out),
+                torch.nn.Linear(L_out, L_out)
+            ])
+        })
 
         #Kinematic Layers
         self.BN2 = torch.nn.BatchNorm2d(shape_out[-1])
@@ -35,28 +62,30 @@ class EMG_RNN_CNN(torch.nn.Module):
         self.RNNY2 = torch.nn.RNN(input_size = params['RNN_hdim'], hidden_size = shape_out[-1], num_layers = 1, batch_first = True, nonlinearity = 'relu')
         self.RNNZ2 = torch.nn.RNN(input_size = params['RNN_hdim'], hidden_size = shape_out[-1], num_layers = 1, batch_first = True, nonlinearity = 'relu')
 
-        #property attributes
-        self._shape_out = shape_out
+        
         
     def forward(self, X, pred):
         '''
         EMG Estimator
         '''
         #we expect incoming X to be of shape (N, L, C)
-        X = X.permute(0, 2, 1) #BN expects X to be of shape (N, C, L)
-        X = self.BN1(X) 
+        X = X.permute(0, 2, 1) #spatial_CNN expects X to be of shape (N, C, L)
+        for layer in self.EMG['spatial_CNN']:
+            X = layer(X)
         
-        X = X.permute(0, 2, 1) #RNN expects X to be of shape (N, L, C)
-        X, _  = self.RNN1(X) 
-        X, _ = self.RNN2(X)
+        X = X.permute(0, 2, 1) #temporal_CNN expects X to be of shape (N, L, C)
+        for layer in self.EMG['temporal_CNN']:
+            X = layer(X)
 
-        H = X.permute(0, 2, 1) #affine expects X to be of shape (N, C, L)
-        X = self.aff1(H)
-        Y = self.aff2(H)
-        Z = self.aff3(H)
-
-        H = torch.stack((X, Y, Z), dim = 2) #shape is now (N, C, 3, L)
-        H = H.permute(0, 3, 2, 1) #now we return the expected shape of (N, L, 3, C)
+        for layer in self.EMG['RNN']:
+            X = layer(X)
+        
+        X = X.permute(0, 2, 1) #affine expects X to be of shape (N, C, L)
+        H = torch.zeros(self._shape_out[:, :, :, 0, :])
+        i = 0
+        for layer in self.EMG['affine']:
+            X = torch.nn.ReLU(layer(X))
+            H[:, :, i, :] = X
 
         '''
         Kinematic Estimator
