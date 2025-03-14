@@ -50,7 +50,7 @@ class Experiment:
         '''
         (train_features, _), train_labels = next(iter(train_dataloader))
         model.initialize(train_features.size(), train_labels.size(), params)
-        loss_fn = torch.nn.MSELoss()
+        loss_fn = torch.nn.MSELoss(reduction = 'sum')
         optimizer = torch.optim.Adam(model.parameters(), lr = params['learning_rate'])
         
     
@@ -115,7 +115,7 @@ class Experiment:
         '''
         Testing
         '''
-        loss_fn = torch.nn.MSELoss()
+        loss_fn = torch.nn.MSELoss(reduction = 'sum')
         (test_features, _), test_labels = next(iter(test_dataloader))
         model.initialize(test_features.size(), test_labels.size(), best_params)
         model.load_state_dict(weights)

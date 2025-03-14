@@ -91,7 +91,7 @@ class Trainer:
             loss = self.loss_fn(pred, y)
             max_err, mean_err = self.two_norm3D(pred, y)
             err = torch.max(torch.Tensor([max_err, err]))
-            running_loss.append(loss.item())
+            running_loss.append(loss.item()/y.shape[0])
             running_merr.append(mean_err/y.shape[0])
 
             #backpropagation
@@ -179,8 +179,6 @@ class Trainer:
 
     
     def two_norm3D(self, pred, y, eps = 1e-8):
-        print(pred.shape)
-        print(y.shape)
         X_pred = pred[:,:,0,:,:]
         X = y[:,:,0,:,:]
         X_diff = X_pred - X
@@ -197,9 +195,6 @@ class Trainer:
         diff = torch.sqrt(X_diff**2 + Y_diff**2 + Z_diff**2)
 
         err = diff/(magnitude + eps)*100
-
-        print(err.dtype)
-        print(err.shape)
         max_err = torch.max(err)
         mean_err = torch.mean(err, (1,2,3))
         mean_err = torch.sum(mean_err)
