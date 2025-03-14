@@ -96,11 +96,14 @@ class Experiment:
         return min(metrics['Validation Loss'])
     
 
-    def test_model(self, best_params, data, model, weights):
+    def test_model(self, best_params, data, model, weights, val = 'False'):
         '''
         Preprocessing
         '''
-        X_test, y_test = data["X_test"], data["y_test"]
+        if val:
+            X_test, y_test = data["X_val"], data["y_val"]
+        else:
+            X_test, y_test = data["X_test"], data["y_test"]
         preprocessor = Preprocessor(best_params['t_win'], best_params['t_lookahead'], best_params['t_stride'])
         if best_params['win_mode'] == 'win_rect':
             X_test_wr, y_test_wr, init_state_test = preprocessor.win_rect(X_test, y_test)
