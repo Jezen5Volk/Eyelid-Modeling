@@ -80,6 +80,7 @@ class Experiment:
         #Model Parameters
         params['RNN_hdim'] = trial.suggest_categorical('RNN_hdim', param_choices['RNN_hdim'])
         params['RNN_depth'] = trial.suggest_categorical('RNN_depth', param_choices['RNN_depth'])
+        params['CNN_kernel'] = trial.suggest_categorical('CNN_kernel', param_choices['CNN_kernel'])
         
         metrics = self.run_experiment(params, data, model, trial, epochs, patience)
 

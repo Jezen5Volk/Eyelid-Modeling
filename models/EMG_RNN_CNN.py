@@ -86,6 +86,7 @@ class EMG_RNN_CNN(torch.nn.Module):
         for layer in self.EMG['affine']:
             X = torch.nn.ReLU(layer(X))
             H[:, :, i, :] = X
+            i += 1
 
         '''
         Kinematic Estimator
