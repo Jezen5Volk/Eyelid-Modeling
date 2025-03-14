@@ -93,7 +93,7 @@ class Experiment:
         
         metrics = self.run_experiment(params, data, model, trial, epochs, patience)
 
-        return min(metrics['Validation Avg Marker Error'])
+        return min(metrics['Validation Loss'])
     
 
     def test_model(self, best_params, data, model, weights):

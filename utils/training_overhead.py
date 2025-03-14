@@ -48,7 +48,7 @@ class Trainer:
 
             #Optuna pruning
             if self.trial is not None: 
-                self.trial.report(val_avgerr, t)
+                self.trial.report(val_loss, t)
                 if self.trial.should_prune():
                     raise optuna.TrialPruned()
 
