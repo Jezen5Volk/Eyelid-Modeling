@@ -89,10 +89,10 @@ class Trainer:
             
             #Tracking metrics
             loss = self.loss_fn(pred, y)
-            train_acc, train_avg = self.two_norm3D(pred, y)
-            err = torch.max(torch.Tensor([train_acc, err]))
-            running_loss.append(loss.item())
-            running_merr.append(train_avg)
+            max_err, mean_err = self.two_norm3D(pred, y)
+            err = torch.max(torch.Tensor([max_err/y.shape[0], err]))
+            running_loss.append(loss.item()/y.shape[0])
+            running_merr.append(mean_err/y.shape[0])
 
             #backpropagation
             self.optimizer.zero_grad()
@@ -108,11 +108,7 @@ class Trainer:
 
     def val_loop(self):
         self.model.eval()
-        num_batches = len(self.val_dl)
-
         val_loss = 0
-        val_merr = 0
-        err = 0
 
         with torch.no_grad():
             for (X,P), y in self.val_dl:
@@ -127,18 +123,20 @@ class Trainer:
                     pred[:, :, :, win, :] = self.model(X[:, :, win, :], P)
                     P = pred[:, :, :, win, :].clone()
 
-                val_loss += self.loss_fn(pred, y)
-                val_acc, val_avg = self.two_norm3D(pred, y)
-                val_merr += val_avg
-                err = torch.max(torch.Tensor([val_acc, err]))
-                
-        
-        val_loss /= num_batches
-        val_merr /= num_batches
-        
-        print(f"Validation Error: \n Max Marker Error: {(err):>0.1f}%, Avg Marker Error: {(val_merr):>0.1f}%, Avg loss: {val_loss:>8f} \n")
+               #Shape Conversion
+                preds = preds + tuple(pred.clone())
+                Y = Y + tuple(y)
+            Y = torch.stack(Y)
+            preds = torch.stack(preds)
 
-        return val_loss, val_merr, err
+            val_loss += self.loss_fn(preds, Y)/len(Y)
+            max_err, mean_err = self.two_norm3D(pred, y)
+            max_err /= len(Y)
+            mean_err /= len(Y)
+            
+        print(f"Validation Error: \n Max Marker Error: {(max_err):>0.1f}%, Avg Marker Error: {(mean_err):>0.1f}%, Avg loss: {val_loss:>8f} \n")
+
+        return val_loss, mean_err, max_err
 
     
     def test_model(self, test_dl):
@@ -159,12 +157,13 @@ class Trainer:
                     pred = pred.clone()
                     pred[:, :, :, win, :] = self.model(X[:, :, win, :], P)
                     P = pred[:, :, :, win, :].clone()
-                
+
+            #Shape Conversion
                 preds = preds + tuple(pred.clone())
                 Y = Y + tuple(y)
-
             Y = torch.stack(Y)
             preds = torch.stack(preds)
+
             test_loss += self.loss_fn(preds, Y)/len(Y)
             max_err, mean_err = self.two_norm3D(pred, y)
             max_err /= len(Y)
@@ -181,7 +180,7 @@ class Trainer:
                    }
 
 
-        return metrics, pred
+        return metrics, preds
 
     
     def two_norm3D(self, pred, y, eps = 1e-8):
