@@ -90,8 +90,8 @@ class Trainer:
             #Tracking metrics
             loss = self.loss_fn(pred, y)
             max_err, mean_err = self.two_norm3D(pred, y)
-            err = torch.max(torch.Tensor([max_err/y.shape[0], err]))
-            running_loss.append(loss.item()/y.shape[0])
+            err = torch.max(torch.Tensor([max_err, err]))
+            running_loss.append(loss.item())
             running_merr.append(mean_err/y.shape[0])
 
             #backpropagation
@@ -108,7 +108,6 @@ class Trainer:
 
     def val_loop(self):
         self.model.eval()
-        val_loss = 0
 
         with torch.no_grad():
             preds = ()
@@ -131,9 +130,8 @@ class Trainer:
             Y = torch.stack(Y)
             preds = torch.stack(preds)
 
-            val_loss += self.loss_fn(preds, Y)/len(Y)
-            max_err, mean_err = self.two_norm3D(pred, y)
-            max_err /= len(Y)
+            val_loss = self.loss_fn(preds, Y)/len(Y)
+            max_err, mean_err = self.two_norm3D(preds, Y)
             mean_err /= len(Y)
             
         print(f"Validation Error: \n Max Marker Error: {(max_err):>0.1f}%, Avg Marker Error: {(mean_err):>0.1f}%, Avg loss: {val_loss:>8f} \n")
@@ -143,7 +141,6 @@ class Trainer:
     
     def test_model(self, test_dl):
         self.model.eval()
-        test_loss = 0
     
         with torch.no_grad():
             preds = ()
@@ -166,14 +163,10 @@ class Trainer:
             Y = torch.stack(Y)
             preds = torch.stack(preds)
 
-            test_loss += self.loss_fn(preds, Y)/len(Y)
-            max_err, mean_err = self.two_norm3D(pred, y)
-            max_err /= len(Y)
+            test_loss = self.loss_fn(preds, Y)/len(Y)
+            max_err, mean_err = self.two_norm3D(preds, Y)
             mean_err /= len(Y)
             
-
-        
-        
         print(f"Test Error: \n Max Marker Error: {(max_err):>0.1f}%, Avg Marker Error: {(mean_err):>0.1f}%, Avg loss: {test_loss:>8f} \n")
         metrics = {
                     "Test Max Marker Error": torch.Tensor(max_err).cpu(), 
@@ -186,24 +179,30 @@ class Trainer:
 
     
     def two_norm3D(self, pred, y, eps = 1e-8):
-        X_pred = pred[:,:,0,:]
-        X = y[:,:,0,:]
+        print(pred.shape)
+        print(y.shape)
+        X_pred = pred[:,:,0,:,:]
+        X = y[:,:,0,:,:]
         X_diff = X_pred - X
 
-        Y_pred = pred[:,:,1,:]
-        Y = y[:,:, 1, :]
+        Y_pred = pred[:,:,1,:,:]
+        Y = y[:,:,1,:,:]
         Y_diff = Y_pred - Y
 
-        Z_pred = pred[:,:,2,:]
-        Z = y[:,:, 2, :]
+        Z_pred = pred[:,:,2,:,:]
+        Z = y[:,:,2,:,:]
         Z_diff = Z_pred - Z
 
         magnitude = torch.sqrt(X**2 + Y**2 + Z**2)
         diff = torch.sqrt(X_diff**2 + Y_diff**2 + Z_diff**2)
 
         err = diff/(magnitude + eps)*100
+
+        print(err.dtype)
+        print(err.shape)
         max_err = torch.max(err)
-        mean_err = torch.mean(err)
+        mean_err = torch.mean(err, (1,2,3))
+        mean_err = torch.sum(mean_err)
 
         return max_err, mean_err
 
