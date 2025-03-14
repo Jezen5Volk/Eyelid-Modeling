@@ -1,6 +1,7 @@
 import torch
 import optuna
 
+
 class Trainer:
     def __init__(self, train_dl, val_dl, model, loss_fn, optimizer, batch_size, trial, epochs = 10, patience = 10, delta = 0):
         if torch.cuda.is_available():
@@ -142,12 +143,11 @@ class Trainer:
     
     def test_model(self, test_dl):
         self.model.eval()
-        num_batches = len(test_dl)
-
         test_loss = 0
-        err = 0
-
+    
         with torch.no_grad():
+            preds = ()
+            Y = ()
             for (X,P), y in test_dl:
                 #Handle device switching
                 if torch.cuda.is_available(): 
@@ -159,17 +159,24 @@ class Trainer:
                     pred = pred.clone()
                     pred[:, :, :, win, :] = self.model(X[:, :, win, :], P)
                     P = pred[:, :, :, win, :].clone()
+                
+                preds = preds + tuple(pred.clone())
+                Y = Y + tuple(y)
 
-                test_loss += self.loss_fn(pred, y)
-                test_acc, test_merr = self.two_norm3D(pred, y)
-                err = torch.max(torch.Tensor([test_acc, err]))
+            Y = torch.stack(Y)
+            preds = torch.stack(preds)
+            test_loss += self.loss_fn(preds, Y)/len(Y)
+            max_err, mean_err = self.two_norm3D(pred, y)
+            max_err /= len(Y)
+            mean_err /= len(Y)
+            
+
         
-        test_loss /= num_batches
         
-        print(f"Test Error: \n Max Marker Error: {(err):>0.1f}%, Avg Marker Error: {(test_merr):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+        print(f"Test Error: \n Max Marker Error: {(max_err):>0.1f}%, Avg Marker Error: {(mean_err):>0.1f}%, Avg loss: {test_loss:>8f} \n")
         metrics = {
-                    "Test Max Marker Error": torch.Tensor(err).cpu(), 
-                    "Test Avg Marker Error": torch.Tensor(test_merr).cpu(), 
+                    "Test Max Marker Error": torch.Tensor(max_err).cpu(), 
+                    "Test Avg Marker Error": torch.Tensor(mean_err).cpu(), 
                     "Test Loss": torch.Tensor(test_loss).cpu()
                    }
 
