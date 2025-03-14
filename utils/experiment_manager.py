@@ -5,6 +5,7 @@ from torchvision.transforms import v2
 from torch.utils.data import DataLoader
 from utils.data_management import Mat2TVT, Preprocessor, Custom_EMG, Jitter, MaskRand
 from utils.training_overhead import Trainer
+from models.EMG_RNN_CNN import EMG_RNN_CNN_Wrapper
 
 class Experiment:
     def __init__(self):
@@ -61,6 +62,9 @@ class Experiment:
 
     def optuna_interface(self, trial, param_choices, data, model, epochs, patience):
         params = {}
+        '''
+        Universal Params
+        '''
         #Windowing Parameters
         params['t_win'] = trial.suggest_categorical('t_win', param_choices['t_win'])
         params['t_stride'] = trial.suggest_categorical('t_stride', param_choices['t_stride'])
@@ -80,7 +84,12 @@ class Experiment:
         #Model Parameters
         params['RNN_hdim'] = trial.suggest_categorical('RNN_hdim', param_choices['RNN_hdim'])
         params['RNN_depth'] = trial.suggest_categorical('RNN_depth', param_choices['RNN_depth'])
-        params['CNN_kernel'] = trial.suggest_categorical('CNN_kernel', param_choices['CNN_kernel'])
+
+        '''
+        Non-Universal Params
+        '''
+        if type(model) == EMG_RNN_CNN_Wrapper:
+            params['CNN_kernel'] = trial.suggest_categorical('CNN_kernel', param_choices['CNN_kernel'])
         
         metrics = self.run_experiment(params, data, model, trial, epochs, patience)
 
