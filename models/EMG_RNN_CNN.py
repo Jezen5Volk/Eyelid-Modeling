@@ -24,25 +24,24 @@ class EMG_RNN_CNN(torch.nn.Module):
         self._shape_out = shape_out
         _, L_in, _, C_in = shape_in
         _, L_out, _, _, C_out = shape_out
-        L_result = L_in - 2*params['CNN_kernel'] + 1
-        C_result = C_out - 2*params['CNN_kernel'] + 1
-
+        padding = int((params['CNN_kernel'] - 1)/2) 
+        
+        
         self.EMG = torch.nn.ModuleDict({
             'spatial_CNN': torch.nn.ModuleList([
                 torch.nn.BatchNorm1d(C_in), 
-                torch.nn.Conv1d(C_in, C_out, params['CNN_kernel']),
-                torch.nn.MaxPool1d(params['CNN_kernel']),
+                torch.nn.Conv1d(C_in, C_out, params['CNN_kernel'], padding = padding),
+                torch.nn.MaxPool1d(params['CNN_kernel'], stride = 1, padding = padding),
             ]), 
 
             'temporal_CNN': torch.nn.ModuleList([
-                torch.nn.BatchNorm1d(L_result*2), 
-                torch.nn.Conv1d(L_result*2, L_out, params['CNN_kernel']),
-                torch.nn.MaxPool1d(params['CNN_kernel']),
+                torch.nn.BatchNorm1d(L_in), 
+                torch.nn.Conv1d(L_in, L_out, params['CNN_kernel'], padding = padding),
+                torch.nn.MaxPool1d(params['CNN_kernel'], stride = 1, padding = padding),
             ]), 
 
             'RNN': torch.nn.ModuleList([
-                torch.nn.BatchNorm1d(C_result*2),
-                torch.nn.RNN(C_result*2, params['RNN_hdim'], params['RNN_depth'], batch_first = True, nonlinearity = 'relu', dropout = params['dropout']),
+                torch.nn.RNN(input_size = C_out, hidden_size = params['RNN_hdim'], num_layers = params['RNN_depth'], batch_first = True, nonlinearity = 'relu', dropout = params['dropout']),
                 torch.nn.RNN(input_size = params['RNN_hdim'], hidden_size = C_out, num_layers = 1, batch_first = True, nonlinearity = 'relu')
             ]),
 
@@ -65,6 +64,8 @@ class EMG_RNN_CNN(torch.nn.Module):
         
         
     def forward(self, X, pred):
+        N = X.shape[0]
+
         '''
         EMG Estimator
         '''
@@ -78,16 +79,18 @@ class EMG_RNN_CNN(torch.nn.Module):
             X = layer(X)
 
         for layer in self.EMG['RNN']:
-            X = layer(X)
+            X, _ = layer(X)
+
         
+        H = torch.zeros((N, self._shape_out[1], self._shape_out[2], self._shape_out[4])).cuda()
         X = X.permute(0, 2, 1) #affine expects X to be of shape (N, C, L)
-        H = torch.zeros(self._shape_out[:, :, :, 0, :])
         i = 0
         for layer in self.EMG['affine']:
-            X = torch.nn.ReLU(layer(X))
-            H[:, :, i, :] = X
+            h = layer(X).relu()
+            h = X.permute(0, 2, 1)
+            H[:, :, i, :] = h
             i += 1
-
+        
         '''
         Kinematic Estimator
         '''
