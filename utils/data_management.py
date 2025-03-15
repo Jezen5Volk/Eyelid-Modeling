@@ -242,8 +242,8 @@ class Preprocessor:
         yr = self.yr
         Xr = self.Xr
 
-        num_win = int((t_y - t_lookahead*yr)//int(t_stride*yr))
-    
+        num_win = int((t_y - t_lookahead*yr)/(t_stride*yr))
+        
         X_win = np.empty((int(t_win*Xr), N, num_win, C_x))
         y_win = np.empty((int(t_stride*yr), d, N, num_win, C_y))
         init_state = np.empty((int(t_stride*yr), d, N, C_y))
